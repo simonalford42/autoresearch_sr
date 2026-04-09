@@ -8,16 +8,20 @@ wheels/
 
 # Virtual environments
 .venv
-worktrees/
-results/
-queue/
 
-# Agent prompt files (generated per-session by launchers)
-CLAUDE.md
-AGENTS.md
-
-# Experimental code/artifacts
-dev/
-
-# Results file
+# Agent-generated (not tracked by git)
 results.tsv
+run.log
+baseline_run.log
+eval_results/
+
+# Generated from template (re-rendered each launch)
+program.md
+
+# Operator files (tracked on experiment branches, not main)
+operators/*.jl
+
+# Reference docs (copied from parent repo at launch)
+reference/
+
+caches/
