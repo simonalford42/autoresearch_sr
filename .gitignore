@@ -15,9 +15,6 @@ run.log
 baseline_run.log
 eval_results/
 
-# Generated from template (re-rendered each launch)
-program.md
-
 # Operator files (tracked on experiment branches, not main)
 operators/*.jl
 
