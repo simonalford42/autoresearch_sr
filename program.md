@@ -74,27 +74,28 @@ All datasets should succeed on every run. If `datasets_fail > 0`, your change li
 
 When an experiment is done, log it to `results.tsv` (tab-separated, NOT comma-separated).
 
-The TSV has a header row and 6 columns:
+The TSV has a header row and 7 columns:
 
 ```
-commit	score	datasets_ok	datasets_fail	status	description
+exp	commit	score	datasets_ok	datasets_fail	status	description
 ```
 
-1. git commit hash (short, 7 chars)
-2. score achieved (e.g. 0.423000) — use 0.000000 for crashes
-3. number of datasets that succeeded
-4. number of datasets that failed
-5. status: `keep`, `discard`, or `crash`
-6. short text description of what this experiment tried
+1. experiment number (1, 2, 3, ... — increment by 1 for each new row)
+2. git commit hash (short, 7 chars)
+3. score achieved (e.g. 0.423000) — use 0.000000 for crashes
+4. number of datasets that succeeded
+5. number of datasets that failed
+6. status: `keep`, `discard`, or `crash`
+7. short text description of what this experiment tried
 
 Example:
 
 ```
-commit	score	datasets_ok	datasets_fail	status	description
-a1b2c3d	0.423000	12	0	keep	baseline
-b2c3d4e	0.445000	12	0	keep	add complexity-aware survival operator
-c3d4e5f	0.410000	12	0	discard	aggressive tree pruning mutation (too destructive)
-d4e5f6g	0.000000	0	0	crash	invalid Julia syntax in selection operator
+exp	commit	score	datasets_ok	datasets_fail	status	description
+1	a1b2c3d	0.423000	12	0	keep	baseline
+2	b2c3d4e	0.445000	12	0	keep	add complexity-aware survival operator
+3	c3d4e5f	0.410000	12	0	discard	aggressive tree pruning mutation (too destructive)
+4	d4e5f6g	0.000000	0	0	crash	invalid Julia syntax in selection operator
 ```
 
 ## The experiment loop
