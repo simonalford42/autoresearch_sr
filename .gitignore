@@ -12,6 +12,7 @@ wheels/
 # Agent-generated (not tracked by git)
 results.tsv
 run.log
+run2.log
 baseline_run.log
 eval_results/
 
@@ -23,3 +24,4 @@ reference/
 
 caches/
 out/
+.claude
