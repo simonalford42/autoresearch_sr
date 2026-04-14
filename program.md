@@ -44,6 +44,10 @@ mutation mechanics, and the evolution loop. Everything is fair game within these
 
 **The goal is simple: get the highest score.** The metric is `gt` (ground-truth match rate — fraction of datasets where the discovered equation matches the true formula). Higher is better. Current baseline (unmodified PySR): 0.40.
 
+**Evaluation is noisy.** To guard against noise, `evaluate.py` already runs multiple seeds internally (see `n_runs` in the output) and reports the averaged score. On top of that, every apparent improvement is re-evaluated with a different seed before being accepted (see the loop below).
+
+**Experiment with both ambitious algorithmic changes and smaller tweaks** Think on a scale from 1 to 4: 1 = tweak a hyperparameter, 2 = tweak an approach, 3 = experiment with a new approach, 4 = large change to part of the algorithm. Your experiments should be roughly equally distributed across this scale.
+
 **The first run**: Your very first run should always be to establish the baseline.
 
 ## Output format
@@ -61,41 +65,40 @@ n_runs:        3
 ---
 ```
 
-You can extract the key metrics from the log file:
+You can extract the key metric from the log file:
 ```
-grep "^score:\|^datasets_ok:\|^datasets_fail:" run.log
+grep "^score:" run.log
 ```
 
 ## Dataset health check
 
-All datasets should succeed on every run. If `datasets_fail > 0`, your change likely broke PySR on certain inputs. Do NOT accept a "higher score" that came from fewer datasets succeeding — that's a false improvement. Debug or discard.
+All datasets should succeed on every run. If the run log shows `datasets_fail > 0`, your change likely broke PySR on certain inputs. Do NOT accept a "higher score" that came from fewer datasets succeeding — that's a false improvement. Debug or discard.
 
 ## Logging results
 
 When an experiment is done, log it to `results.tsv` (tab-separated, NOT comma-separated).
 
-The TSV has a header row and 7 columns:
+The TSV has a header row and 6 columns:
 
 ```
-exp	commit	score	datasets_ok	datasets_fail	status	description
+exp	commit	score	score2	status	description
 ```
 
 1. experiment number (1, 2, 3, ... — increment by 1 for each new row)
 2. git commit hash (short, 7 chars)
-3. score achieved (e.g. 0.423000) — use 0.000000 for crashes
-4. number of datasets that succeeded
-5. number of datasets that failed
-6. status: `keep`, `discard`, or `crash`
-7. short text description of what this experiment tried
+3. score achieved on the first evaluation (e.g. 0.423000) — use 0.000000 for crashes
+4. score achieved on the second evaluation (same format as 3), or 0.000000 if none attempted
+5. status: `keep`, `discard`, or `crash`
+6. 1-3 sentence description of what this experiment tried
 
 Example:
 
 ```
-exp	commit	score	datasets_ok	datasets_fail	status	description
-1	a1b2c3d	0.423000	12	0	keep	baseline
-2	b2c3d4e	0.445000	12	0	keep	add complexity-aware survival operator
-3	c3d4e5f	0.410000	12	0	discard	aggressive tree pruning mutation (too destructive)
-4	d4e5f6g	0.000000	0	0	crash	invalid Julia syntax in selection operator
+exp	commit	score	score2	status	description
+1	a1b2c3d	0.423000	0.415000	keep	Baseline run on unmodified PySR to establish a reference score. No source changes; both seeds agree within noise.
+2	b2c3d4e	0.445000	0.425000	keep	Added a complexity-aware survival operator that biases tournament selection toward simpler expressions when fitness is tied. The intent is to reduce bloat early in the search so constant optimization has cleaner trees to refine.
+3	c3d4e5f	0.410000	0.401000	discard	Introduced an aggressive tree-pruning mutation that randomly deletes subtrees above a size threshold.
+4	d4e5f6g	0.000000	0.000000	crash	Rewrote the selection operator to use a softmax over fitness with a temperature schedule, but introduced a Julia syntax error in `RegularizedEvolution.jl`.
 ```
 
 ## The experiment loop
@@ -108,12 +111,12 @@ LOOP FOREVER:
 2. Edit the SymbolicRegression.jl source files with an experimental idea.
 3. git commit
 4. Run the experiment: `python evaluate.py > run.log 2>&1` (redirect everything — do NOT use tee or let output flood your context)
-5. Read out the results: `grep "^score:\|^datasets_ok:\|^datasets_fail:" run.log`
-6. If the grep output is empty, the run crashed. Run `tail -n 50 run.log` or similar to read the error and attempt a fix. If you can't get things to work after more than a few attempts, give up on this direction.
-   If `datasets_fail` is greater than 0, treat it as a partial crash — debug or discard (see "Dataset health check" above).
-7. Record the results in the tsv (NOTE: do not commit the results.tsv file, leave it untracked by git)
-8. If score improved (higher), you "advance" the branch, keeping the git commit
-9. If score is equal or worse, you git reset back to where you started
+5. Read out the result: `grep "^score:" run.log`
+6. If the grep output is empty, the run crashed. Run `tail -n 50 run.log` or similar to read the error and attempt a fix. If you can't get things to work after more than a few attempts, give up on this direction. If the log shows `datasets_fail > 0`, treat it as a partial crash — debug or discard (see "Dataset health check" above).
+7. Evaluation is noisy, so if the score improved (higher), rerun evaluation with a second seed to confirm the improvement is not just noise: `python evaluate.py --seed 43 > run2.log 2>&1`. Read out the score the same way.
+8. Record the results in the tsv (NOTE: do not commit the results.tsv file, leave it untracked by git)
+9. If the second evaluation also improves over the previous best, you "advance" the branch, keeping the git commit
+10. If either evaluation is equal or worse than the previous best, git reset back to where you started
 
 The idea is that you are a completely autonomous researcher trying things out. If they work, keep. If they don't, discard. And you're advancing the branch so that you can iterate.
 
