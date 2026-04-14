@@ -113,7 +113,7 @@ LOOP FOREVER:
 4. Run the experiment: `python evaluate.py > run.log 2>&1` (redirect everything — do NOT use tee or let output flood your context)
 5. Read out the result: `grep "^score:" run.log`
 6. If the grep output is empty, the run crashed. Run `tail -n 50 run.log` or similar to read the error and attempt a fix. If you can't get things to work after more than a few attempts, give up on this direction. If the log shows `datasets_fail > 0`, treat it as a partial crash — debug or discard (see "Dataset health check" above).
-7. Evaluation is noisy, so if the score improved (higher), rerun evaluation with seed 43 and 10 runs per dataset to confirm the improvement is not just noise: `python evaluate.py --seed 43 --n-runs 10 > run2.log 2>&1`. Read out the score the same way.
+7. Evaluation is noisy, so if the score improved (higher), rerun evaluation with seed 43 and 10 runs per dataset to confirm the improvement is not just noise: `python evaluate.py --seed 43 --n-runs 10 > run2.log 2>&1`. Read out the score the same way. (Do this step for the baseline too.)
 8. Record the results in the tsv (NOTE: do not commit the results.tsv file, leave it untracked by git)
 9. If the second evaluation also improves over the previous best, you "advance" the branch, keeping the git commit
 10. If either evaluation is equal or worse than the previous best, git reset back to where you started
