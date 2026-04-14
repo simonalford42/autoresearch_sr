@@ -4,8 +4,10 @@ Wraps PySR SLURM evaluation — this file is READ-ONLY for the agent.
 
 Usage:
     python evaluate.py > run.log 2>&1
+    python evaluate.py --seed 43 --n-runs 10 > run2.log 2>&1
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -27,8 +29,8 @@ from utils import load_dataset_names_from_split
 # ---------------------------------------------------------------------------
 
 SPLIT = "../splits/train.txt"
-SEED = 42
-N_RUNS = 3
+DEFAULT_SEED = 42
+DEFAULT_N_RUNS = 3
 FITNESS_METRIC = "gt"
 MAX_EVALS = 1_000_000
 MAX_SAMPLES = 1000
@@ -43,7 +45,20 @@ JOB_TIMEOUT = 600.0
 # Main
 # ---------------------------------------------------------------------------
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="PySR evaluation harness")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED,
+                        help=f"Data seed for evaluation (default: {DEFAULT_SEED})")
+    parser.add_argument("--n-runs", type=int, default=DEFAULT_N_RUNS,
+                        help=f"Number of runs per dataset (default: {DEFAULT_N_RUNS})")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    seed = args.seed
+    n_runs = args.n_runs
+
     dataset_names = load_dataset_names_from_split(SPLIT)
 
     pysr_kwargs = get_default_pysr_kwargs()
@@ -61,7 +76,7 @@ def main():
         time_limit=TIME_LIMIT,
         mem_per_cpu=MEM_PER_CPU,
         dataset_max_samples=MAX_SAMPLES,
-        data_seed=SEED,
+        data_seed=seed,
         max_retries=2,
         job_timeout=JOB_TIMEOUT,
         use_cache=True,
@@ -70,7 +85,7 @@ def main():
     )
 
     print(f"Evaluating sandbox at {SANDBOX_ROOT}")
-    print(f"Evaluating on {len(dataset_names)} datasets, {N_RUNS} runs each...")
+    print(f"Evaluating on {len(dataset_names)} datasets, {n_runs} runs each (seed={seed})...")
     print(f"Fitness metric: {FITNESS_METRIC}")
     print()
 
@@ -79,8 +94,8 @@ def main():
             evaluator,
             [config],
             dataset_names,
-            SEED,
-            N_RUNS,
+            seed,
+            n_runs,
             None,  # no target noise
             FITNESS_METRIC,
         )
@@ -115,7 +130,7 @@ def main():
     print(f"datasets_ok:   {datasets_ok}")
     print(f"datasets_fail: {datasets_fail}")
     print(f"metric:        {FITNESS_METRIC}")
-    print(f"n_runs:        {N_RUNS}")
+    print(f"n_runs:        {n_runs}")
     print(f"---")
 
 
