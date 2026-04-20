@@ -30,10 +30,9 @@ from parallel_eval_pysr import (
     get_default_mutation_weights,
     get_default_pysr_kwargs,
 )
-from evolve_pysr import (
+from evolution_helpers import (
     _build_target_noise_map,
     _evaluate_configs_with_noise_map,
-    pre_validate_julia_syntax,
 )
 from utils import load_dataset_names_from_split
 
@@ -167,15 +166,6 @@ def run_evaluation(args):
     if args.mode == "operator":
         operators_dir = Path(args.operators_dir)
         config = build_operator_config(operators_dir, pysr_kwargs)
-
-        # Validate operator files
-        for op_file in ["mutation.jl", "survival.jl", "selection.jl"]:
-            code = read_operator_file(operators_dir / op_file)
-            if code:
-                ok, msg = pre_validate_julia_syntax(code)
-                if not ok:
-                    print(f"SYNTAX_ERROR: {op_file}: {msg}")
-                    sys.exit(1)
 
         # Print what operators are active
         has_mutation = config.custom_mutation_code is not None
